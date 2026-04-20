@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rider App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .phone {
+      width: 375px;
+      background: #fff;
+      border-radius: 40px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.2);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Map Area ── */
+    .map-area {
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      height: 280px;
+      position: relative;
+      padding: 20px;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      color: #fff;
+      font-size: 12px;
+      margin-bottom: 16px;
+      opacity: 0.85;
+    }
+    .greeting { color: #fff; }
+    .greeting span { font-size: 13px; opacity: 0.7; display: block; }
+    .greeting h2  { font-size: 20px; font-weight: 700; margin-top: 2px; }
+
+    .map-dots {
+      position: absolute;
+      bottom: 60px; left: 0; right: 0;
+      display: flex; justify-content: center;
+    }
+    .map-dots .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      margin: 0 4px;
+      animation: pulse 2s infinite;
+    }
+    .map-dots .dot:nth-child(2) { animation-delay: .4s; }
+    .map-dots .dot:nth-child(3) { animation-delay: .8s; }
+    @keyframes pulse {
+      0%,100% { transform: scale(1);   opacity: .3; }
+      50%      { transform: scale(1.6); opacity: 1;  }
+    }
+
+    .route-visual {
+      position: absolute;
+      bottom: 30px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .route-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #e94560; box-shadow: 0 0 8px #e94560;
+    }
+    .route-line {
+      width: 80px; height: 3px;
+      background: linear-gradient(90deg, #e94560, #00b4d8);
+      border-radius: 2px;
+    }
+    .route-dot.end { background: #00b4d8; box-shadow: 0 0 8px #00b4d8; }
+
+    .rider-icon {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    /* ── Search Bar ── */
+    .search-wrap {
+      margin: -22px 16px 0;
+      position: relative; z-index: 10;
+    }
+    .search-bar {
+      background: #fff; border-radius: 14px;
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .search-bar span { font-size: 18px; }
+    .search-bar input {
+      border: none; outline: none;
+      font-size: 14px; color: #333;
+      flex: 1; background: transparent;
+    }
+    .search-bar .mic { font-size: 16px; color: #e94560; cursor: pointer; }
+
+    /* ── Sections ── */
+    .section { padding: 20px 16px 0; }
+    .section-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 14px; }
+
+    .quick-actions { display: flex; justify-content: space-between; }
+    .action-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+    .action-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; transition: transform .2s;
+    }
+    .action-icon:hover { transform: scale(1.08); }
+    .action-btn span:last-child { font-size: 11px; color: #555; font-weight: 600; }
+
+    .bg-red    { background: #fff0f3; }
+    .bg-blue   { background: #f0f8ff; }
+    .bg-green  { background: #f0fff4; }
+    .bg-purple { background: #f8f0ff; }
+
+    /* ── Rider Cards ── */
+    .riders-list { display: flex; flex-direction: column; gap: 12px; }
+    .rider-card {
+      background: #f8faff; border-radius: 16px;
+      padding: 14px; display: flex; align-items: center; gap: 12px;
+      transition: box-shadow .2s, border .2s;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .rider-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .rider-card.selected { border-color: #e94560; background: #fff5f7; }
+
+    .avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .rider-info { flex: 1; }
+    .rider-info h4 { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+    .rider-info p  { font-size: 12px; color: #888; margin-top: 2px; }
+    .rider-meta { text-align: right; }
+    .eta  { font-size: 13px; font-weight: 700; color: #e94560; }
+    .price { font-size: 12px; color: #555; margin-top: 2px; }
+    .stars { color: #f5a623; font-size: 11px; }
+
+    /* ── Book Button ── */
+    .book-btn {
+      margin: 20px 16px 24px;
+      background: linear-gradient(135deg, #e94560, #c62a47);
+      color: #fff; border: none; border-radius: 16px;
+      width: calc(100% - 32px); padding: 16px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 8px 20px rgba(233,69,96,0.4);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .book-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(233,69,96,0.5); }
+    .book-btn:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; transform: none; }
+
+    /* ── Bottom Nav ── */
+    .bottom-nav {
+      background: #fff; border-top: 1px solid #eee;
+      display: flex; justify-content: space-around;
+      padding: 12px 0 18px;
+    }
+    .nav-item {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      cursor: pointer; font-size: 20px;
+    }
+    .nav-item span:last-child { font-size: 10px; color: #aaa; font-weight: 600; }
+    .nav-item.active span:last-child { color: #e94560; }
+    .nav-item.active { position: relative; }
+    .nav-item.active::after {
+      content: ''; position: absolute; top: -12px;
+      width: 24px; height: 3px;
+      background: #e94560; border-radius: 2px;
+    }
+
+    /* ════════════════════════════════
+       BOOKING MODAL OVERLAY
+    ════════════════════════════════ */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      background: #fff;
+      width: 375px;
+      border-radius: 30px 30px 0 0;
+      padding: 24px 20px 36px;
+      animation: slideUp .35s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: #ddd; border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title { font-size: 18px; font-weight: 800; color: #1a1a2e; margin-bottom: 18px; }
+
+    /* Rider Summary */
+    .booked-rider {
+      display: flex; align-items: center; gap: 14px;
+      background: #f8faff; border-radius: 16px; padding: 14px;
+      margin-bottom: 18px;
+    }
+    .booked-avatar {
+      width: 54px; height: 54px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .booked-info h4 { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+    .booked-info p  { font-size: 12px; color: #888; margin-top: 3px; }
+    .booked-badge {
+      margin-left: auto;
+      background: #e94560; color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px;
+    }
+
+    /* Trip Details */
+    .trip-details { margin-bottom: 18px; }
+    .trip-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px dashed #eee;
+    }
+    .trip-row:last-child { border-bottom: none; }
+    .trip-icon { font-size: 18px; width: 28px; text-align: center; }
+    .trip-text { flex: 1; font-size: 13px; color: #444; }
+    .trip-text strong { display: block; font-weight: 700; color: #1a1a2e; font-size: 14px; }
+
+    /* Payment */
+    .payment-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #f8faff; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 18px;
+    }
+    .payment-left { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+    .payment-change { font-size: 12px; color: #e94560; cursor: pointer; font-weight: 700; }
+
+    /* Fare Breakdown */
+    .fare-box {
+      background: #fff5f7; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 20px;
+    }
+    .fare-row {
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: #555; padding: 4px 0;
+    }
+    .fare-row.total {
+      font-size: 15px; font-weight: 800; color: #1a1a2e;
+      border-top: 1px solid #f0c0ca; margin-top: 8px; padding-top: 10px;
+    }
+
+    /* Confirm Button */
+    .confirm-btn {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, #e94560, #c62a47);
+      color: #fff; font-size: 16px; font-weight: 800;
+      border: none; border-radius: 16px; cursor: pointer;
+      box-shadow: 0 8px 20px rgba(233,69,96,0.4);
+      transition: transform .2s;
+    }
+    .confirm-btn:hover { transform: translateY(-2px); }
+
+    .cancel-link {
+      display: block; text-align: center;
+      margin-top: 14px; font-size: 13px; color: #aaa;
+      cursor: pointer;
+    }
+    .cancel-link:hover { color: #e94560; }
+
+    /* ════════════════════════════════
+       TRACKING MODAL
+    ════════════════════════════════ */
+    .tracking-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .tracking-overlay.show { display: flex; }
+
+    .tracking-modal {
+      background: #fff;
+      width: 375px;
+      border-radius: 30px 30px 0 0;
+      padding: 24px 20px 36px;
+      animation: slideUp .35s ease;
+    }
+
+    /* Live Map Mockup */
+    .live-map {
+      background: linear-gradient(160deg, #1a1a2e, #0f3460);
+      border-radius: 20px; height: 160px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden; margin-bottom: 18px;
+    }
+    .live-map .ping {
+      position: absolute;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: rgba(233,69,96,0.3);
+      animation: ping 1.5s infinite;
+    }
+    @keyframes ping {
+      0%   { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .live-map .bike { font-size: 34px; z-index: 1; }
+
+    .progress-wrap { margin-bottom: 16px; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: #888; margin-bottom: 6px;
+    }
+    .progress-bar {
+      background: #f0f0f0; border-radius: 10px; height: 8px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e94560, #ff8fa3);
+      border-radius: 10px;
+      width: 0%;
+      transition: width .4s ease;
+    }
+
+    .tracking-rider {
+      display: flex; align-items: center; gap: 12px;
+      background: #f8faff; border-radius: 14px; padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .tracking-rider .t-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .tracking-rider .t-info { flex: 1; }
+    .tracking-rider .t-info h4 { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+    .tracking-rider .t-info p  { font-size: 11px; color: #888; margin-top: 2px; }
+    .call-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #e94560; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      box-shadow: 0 4px 12px rgba(233,69,96,0.4);
+    }
+
+    .eta-badge {
+      text-align: center; margin-bottom: 18px;
+    }
+    .eta-badge .eta-num {
+      font-size: 36px; font-weight: 900; color: #e94560;
+      line-height: 1;
+    }
+    .eta-badge .eta-label { font-size: 13px; color: #888; margin-top: 4px; }
+    .eta-badge .eta-status { font-size: 12px; font-weight: 700; color: #00b894; margin-top: 6px; }
+
+    .cancel-ride-btn {
+      width: 100%; padding: 14px;
+      background: #fff; color: #e94560;
+      font-size: 14px; font-weight: 700;
+      border: 2px solid #e94560; border-radius: 14px; cursor: pointer;
+      transition: all .2s;
+    }
+    .cancel-ride-btn:hover { background: #e94560; color: #fff; }
+
+    /* ════════════════════════════════
+       SUCCESS / ARRIVED MODAL
+    ════════════════════════════════ */
+    .success-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 300;
+      align-items: center; justify-content: center;
+    }
+    .success-overlay.show { display: flex; }
+
+    .success-modal {
+      background: #fff; width: 320px; border-radius: 28px;
+      padding: 32px 24px; text-align: center;
+      animation: popIn .4s ease;
+    }
+    @keyframes popIn {
+      from { transform: scale(.7); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+    .success-icon { font-size: 64px; margin-bottom: 12px; }
+    .success-modal h3 { font-size: 20px; font-weight: 800; color: #1a1a2e; margin-bottom: 6px; }
+    .success-modal p  { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+    .rate-stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+    .rate-stars span {
+      font-size: 32px; cursor: pointer;
+      transition: transform .2s;
+      filter: grayscale(1);
+    }
+    .rate-stars span:hover,
+    .rate-stars span.lit { filter: grayscale(0); transform: scale(1.2); }
+
+    .done-btn {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #e94560, #c62a47);
+      color: #fff; font-size: 15px; font-weight: 700;
+      border: none; border-radius: 14px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     MAIN HOME SCREEN
+══════════════════════════════ -->
+<div class="phone" id="homeScreen">
+
+  <!-- Map Header -->
+  <div class="map-area">
+    <div class="status-bar">
+      <span>9:41 AM</span><span>📶 🔋</span>
+    </div>
+    <div class="greeting">
+      <span>Good Morning 👋</span>
+      <h2>Where to, Bilal?</h2>
+    </div>
+    <div class="rider-icon">🏍️</div>
+    <div class="map-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="route-visual">
+      <div class="route-dot"></div>
+      <div class="route-line"></div>
+      <div class="route-dot end"></div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="destInput" placeholder="Search destination..." />
+      <span class="mic">🎙️</span>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="section">
+    <div class="section-title">Quick Ride</div>
+    <div class="quick-actions">
+      <div class="action-btn" onclick="setDest('Home')">
+        <div class="action-icon bg-red">🏠</div><span>Home</span>
+      </div>
+      <div class="action-btn" onclick="setDest('Work')">
+        <div class="action-icon bg-blue">💼</div><span>Work</span>
+      </div>
+      <div class="action-btn" onclick="setDest('Market')">
+        <div class="action-icon bg-green">🛒</div><span>Market</span>
+      </div>
+      <div class="action-btn" onclick="setDest('Saved Places')">
+        <div class="action-icon bg-purple">📍</div><span>Saved</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nearby Riders -->
+  <div class="section" style="margin-top: 20px;">
+    <div class="section-title">Nearby Riders</div>
+    <div class="riders-list">
+
+      <div class="rider-card" id="card-0" onclick="selectRider(0)">
+        <div class="avatar" style="background:#fff0f3;">🧑‍✈️</div>
+        <div class="rider-info">
+          <h4>Ahmed Raza</h4>
+          <div class="stars">★★★★★</div>
+          <p>🏍️ Honda CB150 · 0.8 km away</p>
+        </div>
+        <div class="rider-meta">
+          <div class="eta">3 min</div>
+          <div class="price">Rs. 120</div>
+        </div>
+      </div>
+
+      <div class="rider-card" id="card-1" onclick="selectRider(1)">
+        <div class="avatar" style="background:#f0f8ff;">👨‍🚀</div>
+        <div class="rider-info">
+          <h4>Usman Ali</h4>
+          <div class="stars">★★★★☆</div>
+          <p>🏍️ Yamaha YBR · 1.2 km away</p>
+        </div>
+        <div class="rider-meta">
+          <div class="eta">5 min</div>
+          <div class="price">Rs. 100</div>
+        </div>
+      </div>
+
+      <div class="rider-card" id="card-2" onclick="selectRider(2)">
+        <div class="avatar" style="background:#f0fff4;">🧑‍🔧</div>
+        <div class="rider-info">
+          <h4>Tariq Mehmood</h4>
+          <div class="stars">★★★★★</div>
+          <p>🏍️ Suzuki GS150 · 1.6 km away</p>
+        </div>
+        <div class="rider-meta">
+          <div class="eta">7 min</div>
+          <div class="price">Rs. 95</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Book Button -->
+  <button class="book-btn" id="bookBtn" onclick="openBooking()">🚀 Book a Ride Now</button>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active">🏠<span>Home</span></div>
+    <div class="nav-item">🗺️<span>Map</span></div>
+    <div class="nav-item">🕐<span>History</span></div>
+    <div class="nav-item">👤<span>Profile</span></div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     BOOKING CONFIRMATION MODAL
+══════════════════════════════ -->
+<div class="overlay" id="bookingOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Confirm Your Ride 🏍️</div>
+
+    <!-- Selected Rider -->
+    <div class="booked-rider">
+      <div class="booked-avatar" id="modalAvatar"></div>
+      <div class="booked-info">
+        <h4 id="modalName"></h4>
+        <p id="modalBike"></p>
+        <div class="stars" id="modalStars"></div>
+      </div>
+      <div class="booked-badge" id="modalETA"></div>
+    </div>
+
+    <!-- Trip Details -->
+    <div class="trip-details">
+      <div class="trip-row">
+        <span class="trip-icon">📍</span>
+        <div class="trip-text">
+          <strong>Pickup</strong>
+          Gulberg III, Lahore
+        </div>
+      </div>
+      <div class="trip-row">
+        <span class="trip-icon">🎯</span>
+        <div class="trip-text">
+          <strong>Drop-off</strong>
+          <span id="modalDest">—</span>
+        </div>
+      </div>
+      <div class="trip-row">
+        <span class="trip-icon">📏</span>
+        <div class="trip-text">
+          <strong>Distance</strong>
+          4.2 km · ~12 min ride
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Method -->
+    <div class="payment-row">
+      <div class="payment-left">💵 <span>Cash Payment</span></div>
+      <span class="payment-change" onclick="alert('Payment options: Cash, EasyPaisa, JazzCash')">Change →</span>
+    </div>
+
+    <!-- Fare Breakdown -->
+    <div class="fare-box">
+      <div class="fare-row"><span>Base Fare</span><span>Rs. 50</span></div>
+      <div class="fare-row"><span>Distance (4.2 km)</span><span id="fareDistance"></span></div>
+      <div class="fare-row"><span>Service Fee</span><span>Rs. 10</span></div>
+      <div class="fare-row total"><span>Total</span><span id="fareTotal"></span></div>
+    </div>
+
+    <!-- Confirm -->
+    <button class="confirm-btn" onclick="confirmRide()">✅ Confirm Booking</button>
+    <span class="cancel-link" onclick="closeBooking()">✕ Cancel</span>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     LIVE TRACKING MODAL
+══════════════════════════════ -->
+<div class="tracking-overlay" id="trackingOverlay">
+  <div class="tracking-modal">
+    <div class="modal-handle"></div>
+
+    <!-- Live Map -->
+    <div class="live-map">
+      <div class="ping"></div>
+      <div class="bike">🏍️</div>
+    </div>
+
+    <!-- ETA countdown -->
+    <div class="eta-badge">
+      <div class="eta-num" id="etaCountdown">--</div>
+      <div class="eta-label">minutes away</div>
+      <div class="eta-status">🟢 Rider is on the way!</div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Rider approaching…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <!-- Tracking Rider Info -->
+    <div class="tracking-rider">
+      <div class="t-avatar" id="trackAvatar"></div>
+      <div class="t-info">
+        <h4 id="trackName"></h4>
+        <p id="trackBike"></p>
+        <div class="stars" id="trackStars"></div>
+      </div>
+      <button class="call-btn" onclick="callRider()">📞</button>
+    </div>
+
+    <button class="cancel-ride-btn" onclick="cancelRide()">Cancel Ride</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     SUCCESS / ARRIVED MODAL
+══════════════════════════════ -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-modal">
+    <div class="success-icon">🎉</div>
+    <h3>Rider Arrived!</h3>
+    <p>Your ride with <strong id="successName"></strong> is confirmed.<br>Enjoy your trip!</p>
+    <div class="rate-stars" id="rateStars">
+      <span onclick="rateStar(1)">⭐</span>
+      <span onclick="rateStar(2)">⭐</span>
+      <span onclick="rateStar(3)">⭐</span>
+      <span onclick="rateStar(4)">⭐</span>
+      <span onclick="rateStar(5)">⭐</span>
+    </div>
+    <button class="done-btn" onclick="doneRide()">🏁 Done — Back to Home</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════
+     JAVASCRIPT
+══════════════════════════════ -->
+<script>
+  const riders = [
+    { name: "Ahmed Raza",    bike: "Honda CB150",   avatar: "🧑‍✈️", bg: "#fff0f3", stars: "★★★★★", eta: 3,  price: 120 },
+    { name: "Usman Ali",     bike: "Yamaha YBR",    avatar: "👨‍🚀", bg: "#f0f8ff", stars: "★★★★☆", eta: 5,  price: 100 },
+    { name: "Tariq Mehmood", bike: "Suzuki GS150",  avatar: "🧑‍🔧", bg: "#f0fff4", stars: "★★★★★", eta: 7,  price: 95  },
+  ];
+
+  let selectedRider = null;
+  let trackingTimer = null;
+
+  /* ── Select a rider card ── */
+  function selectRider(idx) {
+    selectedRider = idx;
+    document.querySelectorAll('.rider-card').forEach((c,i) => {
+      c.classList.toggle('selected', i === idx);
+    });
+    document.getElementById('bookBtn').disabled = false;
+  }
+
+  /* ── Quick-action shortcuts ── */
+  function setDest(place) {
+    document.getElementById('destInput').value = place;
+  }
+
+  /* ── Open Booking Modal ── */
+  function openBooking() {
+    const dest = document.getElementById('destInput').value.trim() || 'City Centre';
+
+    if (selectedRider === null) {
+      alert('👆 Please select a rider first!');
+      return;
+    }
+
+    const r = riders[selectedRider];
+
+    // Populate modal
+    document.getElementById('modalAvatar').textContent  = r.avatar;
+    document.getElementById('modalAvatar').style.background = r.bg;
+    document.getElementById('modalName').textContent    = r.name;
+    document.getElementById('modalBike').textContent    = '🏍️ ' + r.bike;
+    document.getElementById('modalStars').textContent   = r.stars;
+    document.getElementById('modalETA').textContent     = r.eta + ' min';
+    document.getElementById('modalDest').textContent    = dest;
+
+    const distFare = r.price - 60;
+    document.getElementById('fareDistance').textContent = 'Rs. ' + distFare;
+    document.getElementById('fareTotal').textContent    = 'Rs. ' + r.price;
+
+    document.getElementById('bookingOverlay').classList.add('show');
+  }
+
+  function closeBooking() {
+    document.getElementById('bookingOverlay').classList.remove('show');
+  }
+
+  /* ── Confirm → Start Tracking ── */
+  function confirmRide() {
+    closeBooking();
+    const r = riders[selectedRider];
+
+    // Populate tracking modal
+    document.getElementById('trackAvatar').textContent  = r.avatar;
+    document.getElementById('trackAvatar').style.background = r.bg;
+    document.getElementById('trackName').textContent    = r.name;
+    document.getElementById('trackBike').textContent    = '🏍️ ' + r.bike;
+    document.getElementById('trackStars').textContent   = r.stars;
+
+    startTracking(r.eta);
+    document.getElementById('trackingOverlay').classList.add('show');
+  }
+
+  /* ── Live ETA countdown + progress bar ── */
+  function startTracking(etaMin) {
+    let seconds  = etaMin * 60;
+    const total  = seconds;
+
+    document.getElementById('etaCountdown').textContent = etaMin;
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressPct').textContent  = '0%';
+
+    clearInterval(trackingTimer);
+    trackingTimer = setInterval(() => {
+      seconds--;
+      const pct = Math.min(100, Math.round(((total - seconds) / total) * 100));
+
+      document.getElementById('etaCountdown').textContent = Math.max(0, Math.ceil(seconds / 60));
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressPct').textContent  = pct + '%';
+
+      if (seconds <= 0) {
+        clearInterval(trackingTimer);
+        riderArrived();
+      }
+    }, 1000);
+  }
+
+  /* ── Rider arrived ── */
+  function riderArrived() {
+    document.getElementById('trackingOverlay').classList.remove('show');
+    document.getElementById('successName').textContent = riders[selectedRider].name;
+    document.getElementById('successOverlay').classList.add('show');
+  }
+
+  /* ── Call rider ── */
+  function callRider() {
+    alert('📞 Calling ' + riders[selectedRider].name + '…\n(Demo — no real call placed)');
+  }
+
+  /* ── Cancel ride ── */
+  function cancelRide() {
+    if (confirm('Are you sure you want to cancel the ride?')) {
+      clearInterval(trackingTimer);
+      document.getElementById('trackingOverlay').classList.remove('show');
+      resetHome();
+    }
+  }
+
+  /* ── Star rating ── */
+  function rateStar(n) {
+    document.querySelectorAll('#rateStars span').forEach((s,i) => {
+      s.classList.toggle('lit', i < n);
+    });
+  }
+
+  /* ── Done / Back to Home ── */
+  function doneRide() {
+    document.getElementById('successOverlay').classList.remove('show');
+    resetHome();
+  }
+
+  function resetHome() {
+    selectedRider = null;
+    document.querySelectorAll('.rider-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('destInput').value = '';
+    document.getElementById('bookBtn').disabled = false;
+    document.querySelectorAll('#rateStars span').forEach(s => s.classList.remove('lit'));
+  }
+</script>
+
+</body>
+</html>
