@@ -19,7 +19,7 @@ $JFrogBaseURL          = "https://artifactory.global.standardchartered.com/artif
 $JFrogUser             = "svc-incountry"
 $JFrogPassword         = "vendorbin2upload"
 
-$AdoIngestionTicketURL = "https://dev.azure.com"   # Update with your actual ADO org URL
+$AdoIngestionTicketURL = "https://dev.azure.com/{org}/{project}"  # Replace {org} and {project} with your ADO org/project names
 
 # Node tags
 $TestNodes       = "hki4ympy8hl0l00"
@@ -181,7 +181,12 @@ Write-Host ""
 Write-Host "  [Clipboard already contains the Discussion Table]" -ForegroundColor Green
 
 Write-Step "Opening ADO in browser..."
-Start-Process $AdoIngestionTicketURL
+if ($AdoIngestionTicketURL -match '\{org\}|\{project\}') {
+    Write-Host "  [NOTE] Update `$AdoIngestionTicketURL with your real ADO org/project URL before running." -ForegroundColor Yellow
+    Write-Host "  Example: https://dev.azure.com/myorg/myproject" -ForegroundColor Gray
+} else {
+    Start-Process $AdoIngestionTicketURL
+}
 
 Pause-ForUser "Complete the ADO ticket steps above, then press ENTER to continue..."
 
