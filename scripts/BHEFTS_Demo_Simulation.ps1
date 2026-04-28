@@ -17,7 +17,7 @@ param(
 
 $ReleaseZipName     = "Gen_Release.zip"
 $JFrogBaseURL       = "https://artifactory.global.standardchartered.com/artifactory/restricted-generic-artifactingestion/50274-BHEFTS/package"
-$JFrogUser          = "svc-incountry"
+$JFrogUser          = if ($Env:JFROG_USER) { $Env:JFROG_USER } else { "svc-incountry" }
 $JFrogUploadURL     = "$JFrogBaseURL/$ReleaseZipName"
 $ZipFullPath        = Join-Path $ReleaseFolderPath $ReleaseZipName
 

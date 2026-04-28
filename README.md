@@ -220,7 +220,7 @@ ADO Repo: `50274-REPO-BHEFTS`
 1. Go to **[dev.azure.com](https://dev.azure.com)**
 2. Click **"Start free"**
 3. Sign in with your Microsoft/Outlook account  
-   *(Email: muhammad.bilal@avanzasolutions.com — if it has a Microsoft account linked)*
+   *(Sign in with your Microsoft/Outlook account or organizational account)*
 4. Create a new **Organization** (e.g. `bhefts-demo`)
 5. Create a new **Project** (e.g. `BHEFTS-Demo`)
 6. In the project, go to **Pipelines → New Pipeline**

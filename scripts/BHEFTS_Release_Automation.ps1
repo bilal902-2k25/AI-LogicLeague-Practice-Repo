@@ -14,9 +14,14 @@ param(
 
 $ReleaseZipName     = "Gen_Release.zip"
 $JFrogBaseURL       = "https://artifactory.global.standardchartered.com/artifactory/restricted-generic-artifactingestion/50274-BHEFTS/package"
-$JFrogUser          = "svc-incountry"
-$JFrogPassword      = "vendorbin2upload"
 $AdoIngestionTicketURL = "https://dev.azure.com"   # Replace with your ADO org URL
+
+# ---- CREDENTIALS (prefer environment variables over hardcoding) ----
+# Set JFROG_USER and JFROG_PASSWORD as environment variables to avoid
+# storing credentials in source code.
+# Example:  $Env:JFROG_USER = "svc-incountry" ; $Env:JFROG_PASSWORD = "vendorbin2upload"
+$JFrogUser     = if ($Env:JFROG_USER)     { $Env:JFROG_USER }     else { "svc-incountry" }
+$JFrogPassword = if ($Env:JFROG_PASSWORD) { $Env:JFROG_PASSWORD } else { "vendorbin2upload" }
 
 # ============================================================
 #   HELPER FUNCTIONS
